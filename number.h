@@ -7,3 +7,7 @@
 struct Number;
 
 struct Number * num_from_str(char * str);
+
+void print_number(struct Number * num);
+
+struct Number * multiply(struct Number * num1, struct Number * num2);
