@@ -31,10 +31,26 @@ int gcd(int m, int n) {
 
 static struct Number DIVIDE_BY_ZERO = {-2147483648, 0};
 
-void simplify(struct Number * num) {
-    int factor = gcd(num->num, num->denom);
-    num->num /= factor;
-    num->denom /= factor;
+void simplify(struct Number * n) {
+    int factor = gcd(n->num, n->denom);
+    n->num /= factor;
+    n->denom /= factor;
+
+    if (n->num < 0 && n->denom < 0) {
+        n->num *= -1;
+        n->denom *= -1;
+    } else if (n->num > 0 && n->denom < 0) {
+        n->num *= -1;
+        n->denom *= -1;
+    }
+}
+
+struct Number * create_number(int num, int denom) {
+    struct Number * newnum = malloc(sizeof(struct Number));
+    newnum->num = num;
+    newnum->denom = denom;
+    simplify(newnum);
+    return newnum;
 }
 
 struct Number * num_from_str(char * str) {
@@ -47,8 +63,7 @@ struct Number * num_from_str(char * str) {
         if (str[i] == '/') {
             fraction = true;
             if (str[i + 1] == '0') {
-                new_num->num = DIVIDE_BY_ZERO.num;
-                new_num->denom = DIVIDE_BY_ZERO.denom;
+                new_num = create_number(DIVIDE_BY_ZERO.num, DIVIDE_BY_ZERO.denom);
                 return new_num;
             }
             new_num->denom = ch_to_d(str[i + 1]);
@@ -59,15 +74,39 @@ struct Number * num_from_str(char * str) {
             new_num->denom = new_num->denom * 10 + ch_to_d(str[i]);
         }
     }
+    simplify(new_num);
     return new_num;
 }
 
-struct Number * multiply(struct Number * num1, struct Number * num2) {
+struct Number * multiply(struct Number * n1, struct Number * n2) {
     struct Number * new_num = malloc(sizeof(struct Number));
-    new_num->num = num1->num * num2->num;
-    new_num->denom = num1->denom * num2->denom;
+    new_num->num = n1->num * n2->num;
+    new_num->denom = n1->denom * n2->denom;
     simplify(new_num);
     return new_num;
+}
+
+struct Number * divide(struct Number * n1, struct Number * n2) {
+    struct Number * newn2 = create_number(n2->denom, n2->num);
+    struct Number * product = multiply(n1, newn2);
+    free(newn2);
+    return product;
+}
+
+struct Number * add(struct Number * n1, struct Number * n2) {
+    struct Number * sum = malloc(sizeof(struct Number));
+    sum->num = n1->num * n2->denom + n2->num * n1->denom;
+    sum->denom = n1->denom * n2->denom;
+    simplify(sum);
+    return sum;
+}
+
+struct Number * subtract(struct Number * n1, struct Number * n2) {
+    struct Number * difference = malloc(sizeof(struct Number));
+    struct Number * newn2 = create_number(-1 * n2->num, n2->denom);
+    difference = add(n1, newn2);
+    free(newn2);
+    return difference;
 }
 
 void print_number(struct Number * num) {

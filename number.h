@@ -8,6 +8,12 @@ struct Number;
 
 struct Number * num_from_str(char * str);
 
-void print_number(struct Number * num);
+void print_number(struct Number * n);
 
-struct Number * multiply(struct Number * num1, struct Number * num2);
+struct Number * multiply(struct Number * n1, struct Number * n2);
+
+struct Number * divide(struct Number * n1, struct Number * n2);
+
+struct Number * add(struct Number * n1, struct Number * n2);
+
+struct Number * subtract(struct Number * n1, struct Number * n2);
