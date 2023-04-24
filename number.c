@@ -116,3 +116,11 @@ void print_number(struct Number * num) {
     }
     printf("%d / %d", num->num, num->denom);
 }
+
+bool num_equal(struct Number * n1, struct Number * n2) {
+    return n1->num == n2->num && n1->denom == n2->denom;
+}
+
+char * str_from_num(struct Number * n) {
+    
+}
