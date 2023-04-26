@@ -8,20 +8,27 @@
 
 struct Number;
 
+// Allocates memory: client needs to free
 struct Number * num_from_str(char * str);
 
+// Allocates memory: client needs to free
 struct Number * create_number(int num, int denom);
 
 void print_number(struct Number * n);
 
+// Allocates memory: client needs to free
 struct Number * multiply(struct Number * n1, struct Number * n2);
 
+// Allocates memory: client needs to free
 struct Number * divide(struct Number * n1, struct Number * n2);
 
+// Allocates memory: client needs to free
 struct Number * add(struct Number * n1, struct Number * n2);
 
+// Allocates memory: client needs to free
 struct Number * subtract(struct Number * n1, struct Number * n2);
 
 bool num_equal(struct Number * n1, struct Number * n2);
 
+// Allocates memory: client needs to free
 char * str_from_num(struct Number * n);

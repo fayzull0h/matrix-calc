@@ -6,14 +6,44 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-static int ch_to_d(char c) {
-    if (c == '-') {
-        return -1;
+static int num_of_digits(int n) {
+    if (n < 0) {
+        return 1 + num_of_digits(-1 * n);
+    } else if (n < 10) {
+        return 1;
+    } else {
+        return 1 + num_of_digits(n / 10);
     }
+}
+
+static int ch_to_d(char c) {
     if (c < '0' || c > '9') {
         return 10;
     }
     return c - 48;
+}
+
+static int d_to_ch(int n) {
+    return n + 48;
+}
+
+// Allocates memory: needs to be freed
+static char * str_from_int(int n) {
+    int temp = n;
+    int n_digs = num_of_digits(n);
+    if (n < 0) {
+        n *= -1;
+    }
+    char * str = malloc(sizeof(char) * (n_digs + 1));
+    for (int i = n_digs - 1; i >= 0; --i) {
+        str[i] = d_to_ch(n % 10);
+        n /= 10;
+    }
+    if (temp < 0) {
+        str[0] = '-';
+    }
+    str[n_digs] = '\0';
+    return str;
 }
 
 struct Number {
@@ -36,13 +66,10 @@ void simplify(struct Number * n) {
     n->num /= factor;
     n->denom /= factor;
 
-    if (n->num < 0 && n->denom < 0) {
+    if (n->denom < 0) {
         n->num *= -1;
         n->denom *= -1;
-    } else if (n->num > 0 && n->denom < 0) {
-        n->num *= -1;
-        n->denom *= -1;
-    }
+    } 
 }
 
 struct Number * create_number(int num, int denom) {
@@ -55,11 +82,17 @@ struct Number * create_number(int num, int denom) {
 
 struct Number * num_from_str(char * str) {
     struct Number * new_num = malloc(sizeof(struct Number));
-    new_num->num = ch_to_d(str[0]);
+    int i = 1;
+    if (str[0] == '-') {
+        new_num->num = -1 * ch_to_d(str[1]);
+        i = 2;
+    } else {
+        new_num->num = ch_to_d(str[0]);
+    }
     new_num->denom = 1;
     bool fraction = false;
 
-    for (int i = 1; str[i]; ++i) {
+    for (; str[i]; ++i) {
         if (str[i] == '/') {
             fraction = true;
             if (str[i + 1] == '0') {
@@ -88,6 +121,7 @@ struct Number * multiply(struct Number * n1, struct Number * n2) {
 
 struct Number * divide(struct Number * n1, struct Number * n2) {
     struct Number * newn2 = create_number(n2->denom, n2->num);
+    simplify(newn2);
     struct Number * product = multiply(n1, newn2);
     free(newn2);
     return product;
@@ -122,5 +156,35 @@ bool num_equal(struct Number * n1, struct Number * n2) {
 }
 
 char * str_from_num(struct Number * n) {
+    // If fraction, return string of numerator
+    if (n->denom == 1) {
+        return str_from_int(n->num);
+    }
+
+    // Setup with number of digits of numerator and denominator
+    int numerator_digs = num_of_digits(n->num);
+    int denom_digs = num_of_digits(n->denom);
+    char * numerator_str = str_from_int(n->num);
+    char * denominator_str = str_from_int(n->denom);
+    char * result = malloc((numerator_digs + denom_digs + 2) * sizeof(char));
+
+    // Fill the first spots with the digits of numerator
+    for (int i = 0; i < numerator_digs; ++i) {
+        result[i] = numerator_str[i];
+    }
     
+    result[numerator_digs] = '/';
+
+    // Fill the space after the slash with digits of denom
+    for (int i = numerator_digs + 1, j = 0; i < numerator_digs + denom_digs + 2; ++i, ++j) {
+        result[i] = denominator_str[j];
+    }
+
+    // Free some allocated memory
+    free(numerator_str);
+    free(denominator_str);
+
+    // Add null char and return result
+    result[numerator_digs + denom_digs + 1] = '\0';
+    return result;
 }
