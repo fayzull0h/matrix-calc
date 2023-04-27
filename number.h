@@ -3,10 +3,14 @@
 // of numbers as fractions instead of decimals
 // 
 // Developed by Fayzulloh Ergashev
+#ifndef NUMBERH
+# define NUMBERH
+# include <stdbool.h>
 
-#include <stdbool.h>
-
-struct Number;
+struct Number {
+    int num;
+    int denom;
+};
 
 // Allocates memory: client needs to free
 struct Number * num_from_str(char * str);
@@ -17,18 +21,20 @@ struct Number * create_number(int num, int denom);
 void print_number(struct Number * n);
 
 // Allocates memory: client needs to free
-struct Number * multiply(struct Number * n1, struct Number * n2);
+struct Number * multiply_number(struct Number * n1, struct Number * n2);
 
 // Allocates memory: client needs to free
-struct Number * divide(struct Number * n1, struct Number * n2);
+struct Number * divide_number(struct Number * n1, struct Number * n2);
 
 // Allocates memory: client needs to free
-struct Number * add(struct Number * n1, struct Number * n2);
+struct Number * add_number(struct Number * n1, struct Number * n2);
 
 // Allocates memory: client needs to free
-struct Number * subtract(struct Number * n1, struct Number * n2);
+struct Number * subtract_number(struct Number * n1, struct Number * n2);
 
 bool num_equal(struct Number * n1, struct Number * n2);
 
 // Allocates memory: client needs to free
 char * str_from_num(struct Number * n);
+
+#endif

@@ -1,40 +1,33 @@
+// A demonstration of the dot product functionality of the vector module
+//
+// Developed by Fayzulloh Ergashev
+
 #include <stdio.h>
-#include <stdlib.h>
 #include <ncurses.h>
+#include <stdlib.h>
+#include "vector.h"
+#include "number.h"
+#include <string.h>
 
-struct vector {
-    int n;
-    int *vec;
-};
-
-int ch_to_int(char c) {
-    return c - 48;
-}
+const int SPACES = 8;
 
 void vector_move(int y, int x) {
-    if (x == 1) {
-        x = 2;
-    } else if (x == 2) {
-        x = 9;
+    if (x == 2) {
+        x = SPACES + 4 + 1;
     }
     move(y, x);
 }
 
-void draw_vector(struct vector *v, bool is_blank, char left, char right, int select, bool is_highlighted) {
-    int vsize = v->n;
+void draw_vector(struct vector * v, int select, char left, char right, bool is_highlighted) {
+    int vsize = get_vector_n(v);
     int x = getcurx(stdscr);
-    int y = getcury(stdscr) + 1;
+    int y = getcury(stdscr);
 
-    if (vsize == 1) {
-        printw("%c", left);
-        if (is_blank) printw("___");
-        else printw("%3d", v->vec[0]);
-        printw("%c", right);
-        return;
-    }
+    struct Number * ZERO = create_number(0, 0);
 
     for (int i = 0; i < vsize; ++i) {
         mvprintw(y + i, x, "%c", left);
+
         if (select == i) {
             attron(A_STANDOUT);
             if (is_highlighted) {
@@ -42,172 +35,160 @@ void draw_vector(struct vector *v, bool is_blank, char left, char right, int sel
                 attron(COLOR_PAIR(1));
             }
         }
-        
-        if (is_blank && v->vec[i] == 0) printw("___");
-        else printw("%3d", v->vec[i]);
 
+        if (num_equal(ith_element(v, i), ZERO)) {
+            for (int j = 0; j < SPACES; ++j) {
+                if (is_highlighted && select == i) {
+                    printw(" ");
+                } else {
+                    printw("_");
+                }
+            }
+        } else {
+            char * str_num = str_from_num(ith_element(v, i));
+            int slen = strlen(str_num);
+            for (int i = 0; i < SPACES - slen; ++i) {
+                printw(" ");
+            }
+            printw("%s", str_num);
+            free(str_num);
+        }
         attroff(COLOR_PAIR(1));
         attroff(A_STANDOUT);
         printw("%c", right);
     }
+    free(ZERO);
 }
 
-void draw_both(struct vector *v1, struct vector *v2, int highlight, bool is_highlighted) {
-    move(0, 0);
-    int vsize = v1->n;
-    bool overlap;
-    if (highlight >= vsize) {
-        highlight -= vsize;
-        draw_vector(v1, true, '|', '|', -1, is_highlighted);
-        move(0, 7);
-        draw_vector(v2, true, '|', '|', highlight, is_highlighted);
-        return;
+void draw_two(struct vector * v1, struct vector * v2, int select, bool is_highlighted) {
+    move(1, 0);
+    int vsize = get_vector_n(v1);
+
+    if (select >= vsize) {
+        select -= vsize;
+        draw_vector(v1, -1, '|', '|', false);
+        move(1, SPACES + 4);
+        draw_vector(v2, select, '|', '|', is_highlighted);
+    } else {
+        draw_vector(v1, select, '|', '|', is_highlighted);
+        move(1, SPACES + 4);
+        draw_vector(v2, -1, '|', '|', false);
     }
-    draw_vector(v1, true, '|', '|', highlight, is_highlighted);
-    move(0, 7);
-    draw_vector(v2, true, '|', '|', -1, is_highlighted);
 }
 
-void input_number(struct vector *v, int which) {
-    int vsize = v->n;
-    int x = 2;
-    int y = which + 1;
-
-    if (which >= vsize) {
-        x += 7;
-        y -= vsize;
-        which -= vsize;
-    }
-
-    move(y, x);
-    echo();
+void input_number(struct vector * v, int which) {
+    int vsize = get_vector_n(v);
+    char str[10];
     
-    int first = 0;
-    int second = 0;
-    int third = 0;
+    refresh();
 
-    while (1) {
-        first = getch();
-        refresh();
-        if (first == 10) {
-            v->vec[which] = 0;
-            break;
-        }
-        second = getch();
-        refresh();
-        if (second == 10) {
-            v->vec[which] = ch_to_int(first);
-            break;
-        }
-        third = getch();
-        refresh();
-        if (third == 10) {
-            if (first == '-') {
-                v->vec[which] = -1 * ch_to_int(second);
-            } else {
-                v->vec[which] = 10 * ch_to_int(first) + ch_to_int(second);
-            }
-            break;
-        }
-    }
+    echo();
+    getstr(str);
     noecho();
+
+    struct Number * num = num_from_str(str);
+    set_vector_element(v, which - 1, num);
 }
 
-void get_input(struct vector *v1, struct vector *v2) {
-    int vsize = v1->n;
+void get_input(struct vector * v1, struct vector * v2) {
+    // Initial setup: get size of v, etc
+    int vsize = get_vector_n(v1);
     int ch;
     bool is_highlighted;
 
     int posx = 1;
     int posy = 1;
 
-    int highlight = 0;
-    draw_both(v1, v2, highlight, false);
+    // Initial drawing of vectors
+    int select = 0;
+    draw_two(v1, v2, select, false);
+
+    // Input loop
     while (1) {
+        // Moving, but inside the vectors
         vector_move(posy, posx);
         ch = getch();
-        
+
+        // Analyze input and do action
         if (ch == 'k' || ch == KEY_UP) {
-            if (highlight != 0 && highlight != vsize) {
-                highlight--;
+            if (select != 0 && select != vsize) {
+                select--;
                 posy--;
             }
         } else if (ch == 'j' || ch == KEY_DOWN) {
-            if (highlight != vsize - 1 && highlight != vsize * 2 - 1) {
-                highlight++;
+            if (select != vsize - 1 && select != vsize * 2 - 1) {
+                select++;
                 posy++;
             }
         } else if (ch == 'h' || ch == KEY_LEFT) {
-            if (highlight >= vsize) {
-                highlight -= v1->n;
+            if (select >= vsize) {
+                select -= vsize;
                 posx--;
             }
         } else if (ch == 'l' || ch == KEY_RIGHT) {
-            if (highlight < vsize) {
-                highlight += v1->n;
+            if (select < vsize) {
+                select += vsize;
                 posx++;
             }
         } else if (ch == 10) {
             is_highlighted = true;
-            draw_both(v1, v2, highlight, is_highlighted);
+            draw_two(v1, v2, select, is_highlighted);
             refresh();
+            vector_move(posy, posx);
             if (posx == 1) {
-                input_number(v1, highlight);
+                input_number(v1, posy);
             } else {
-                input_number(v2, highlight);
+                input_number(v2, posy);
             }
             is_highlighted = false;
-        } else if (ch == 'q') {
-            break;
         }
-        draw_both(v1, v2, highlight, is_highlighted);
+        else if (ch == 'q') {break;}
+
+        // Draw and refresh
+        draw_two(v1, v2, select, is_highlighted);
         refresh();
     }
 }
 
-int dot_product(struct vector *v1, struct vector *v2) {
-    int vsize = v1->n;
-    int result = 0;
-    for (int i = 0; i < vsize; ++i) {
-        result += v1->vec[i] * v2->vec[i];
-    }
-    return result;
-}
-
-int main(void) {
-    struct vector myvec1 = {0, NULL};
-    struct vector myvec2 = {0, NULL};
+int main() {
+    // Initial setup, with size of vectors
     printf("How many elements in vector? ");
     int temp = 0;
     scanf(" %d", &temp);
-    myvec1.n = temp;
-    myvec1.vec = (int *) calloc(temp, sizeof(int));
-    myvec2.n = temp;
-    myvec2.vec = (int *) calloc(temp, sizeof(int));
+    struct vector * myvec1 = create_vector(temp);  
+    struct vector * myvec2 = create_vector(temp);
 
-    initscr();
+    // Start up ncurses, with color, and prompt for input of numbers
+    initscr(); 
     start_color();
     init_pair(1, COLOR_MAGENTA, COLOR_GREEN);
     mvprintw(0, 0, "Enter numbers:");
+    refresh();
+    
+    // Actually get the input
     cbreak();
     noecho();
     curs_set(0);
     keypad(stdscr, true);
-    move(0,0);
-    get_input(&myvec1, &myvec2);
+    move(1,0);
+    get_input(myvec1, myvec2);
 
+    struct Number * dotp = dot_product(myvec1, myvec2);
+
+    zeroify_vector(myvec1);
+    zeroify_vector(myvec2);
     clear();
-    move(0,0);
-    printw("Final:");
-    draw_both(&myvec1, &myvec2, -1, 0);
-    move(myvec1.n + 2, 0);
-    printw("Dot product: %d", dot_product(&myvec1, &myvec2));
+    mvprintw(0, 0, "Final Result: ");
+    draw_two(myvec1, myvec2, -1, false);
+    mvprintw(temp + 2, 0, "Dot product: %s", str_from_num(dotp));
+
+    // Finish program
     refresh();
     getch();
 
     endwin();
 
-    free(myvec1.vec);
-    free(myvec2.vec);
+    destroy_vector(myvec1);
+    destroy_vector(myvec2);
     return 0;
 }

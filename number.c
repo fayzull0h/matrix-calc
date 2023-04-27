@@ -46,11 +46,6 @@ static char * str_from_int(int n) {
     return str;
 }
 
-struct Number {
-    int num;
-    int denom;
-};
-
 int gcd(int m, int n) {
   if ((m % n) == 0) { // Base case
     return n;
@@ -76,6 +71,9 @@ struct Number * create_number(int num, int denom) {
     struct Number * newnum = malloc(sizeof(struct Number));
     newnum->num = num;
     newnum->denom = denom;
+    if (num == 0 || denom == 0) {
+        return newnum;
+    }
     simplify(newnum);
     return newnum;
 }
@@ -111,7 +109,7 @@ struct Number * num_from_str(char * str) {
     return new_num;
 }
 
-struct Number * multiply(struct Number * n1, struct Number * n2) {
+struct Number * multiply_number(struct Number * n1, struct Number * n2) {
     struct Number * new_num = malloc(sizeof(struct Number));
     new_num->num = n1->num * n2->num;
     new_num->denom = n1->denom * n2->denom;
@@ -119,15 +117,15 @@ struct Number * multiply(struct Number * n1, struct Number * n2) {
     return new_num;
 }
 
-struct Number * divide(struct Number * n1, struct Number * n2) {
+struct Number * divide_number(struct Number * n1, struct Number * n2) {
     struct Number * newn2 = create_number(n2->denom, n2->num);
     simplify(newn2);
-    struct Number * product = multiply(n1, newn2);
+    struct Number * product = multiply_number(n1, newn2);
     free(newn2);
     return product;
 }
 
-struct Number * add(struct Number * n1, struct Number * n2) {
+struct Number * add_number(struct Number * n1, struct Number * n2) {
     struct Number * sum = malloc(sizeof(struct Number));
     sum->num = n1->num * n2->denom + n2->num * n1->denom;
     sum->denom = n1->denom * n2->denom;
@@ -135,10 +133,10 @@ struct Number * add(struct Number * n1, struct Number * n2) {
     return sum;
 }
 
-struct Number * subtract(struct Number * n1, struct Number * n2) {
+struct Number * subtract_number(struct Number * n1, struct Number * n2) {
     struct Number * difference = malloc(sizeof(struct Number));
     struct Number * newn2 = create_number(-1 * n2->num, n2->denom);
-    difference = add(n1, newn2);
+    difference = add_number(n1, newn2);
     free(newn2);
     return difference;
 }
